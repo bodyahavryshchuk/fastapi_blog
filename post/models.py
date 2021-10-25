@@ -1,29 +1,27 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, sql, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
+from tortoise import models, fields
 
-from core.db import Base
-
-
-class Category(Base):
-    __tablename__ = 'post_category'
-
-    id = Column(Integer, primary_key=True, index=True, unique=True)
-    name = Column(String(150))
-    is_active = Column(Boolean, default=True)
+from user.models import User
 
 
-class Post(Base):
-    __tablename__ = 'post_post'
+class Category(models.Model):
+    name = fields.CharField(max_length=100)
+    is_active = fields.BooleanField(default=True)
+    posts: fields.ReverseRelation["Post"]
 
-    id = Column(Integer, primary_key=True, index=True, unique=True)
-    category = Column(Integer, ForeignKey('post_category.id'))
-    category_id = relationship('Category')
-    user = Column(String(150), ForeignKey('user.id'))
-    user_id = relationship('User')
-    title = Column(String(150))
-    text = Column(Text)
-    created_dt = Column(DateTime(timezone=True), server_default=sql.func.now())
+    class PydanticMeta:
+        backward_relations = False
 
 
-post = Post.__table__
-category = Category.__table__
+class Post(models.Model):
+    category: fields.ForeignKeyRelation[Category] = fields.ForeignKeyField(
+        "models.Category", on_delete=fields.CASCADE, related_name="posts"
+    )
+    author: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
+        "models.User", on_delete=fields.CASCADE, related_name="posts"
+    )
+    title = fields.CharField(max_length=100)
+    text = fields.TextField()
+    created_dt = fields.DatetimeField(auto_now_add=True)
+
+    class PydanticMeta:
+        backward_relations = False

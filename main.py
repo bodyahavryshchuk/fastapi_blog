@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from core.db import database
+from core.settings import settings
 from routes import routes
-from user.auth import fastapi_users, jwt_authentication
+from tortoise.contrib.fastapi import register_tortoise
 
 app = FastAPI()
 
@@ -18,30 +19,11 @@ async def shutdown():
 
 app.include_router(routes)
 
-app.include_router(
-    fastapi_users.get_auth_router(jwt_authentication), prefix="/auth/jwt", tags=["auth"]
-)
-app.include_router(
-    fastapi_users.get_register_router(), prefix="/auth", tags=["auth"]
-)
-app.include_router(
-    fastapi_users.get_reset_password_router(),
-    prefix="/auth",
-    tags=["auth"],
-)
-app.include_router(
-    fastapi_users.get_verify_router(),
-    prefix="/auth",
-    tags=["auth"],
-)
-app.include_router(fastapi_users.get_users_router(), prefix="/users", tags=["users"])
 
-# @app.middleware("http")
-# async def db_session_middleware(request: Request, call_next):
-#     response = Response("Internal server error", status_code=500)
-#     try:
-#         request.state.db = SessionLocal()
-#         response = await call_next(request)
-#     finally:
-#         request.state.db.close()
-#     return response
+register_tortoise(
+    app,
+    db_url=settings.db_url,
+    modules={"models": settings.APPS_MODELS},
+    generate_schemas=True,
+    add_exception_handlers=True,
+)

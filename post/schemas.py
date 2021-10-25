@@ -2,13 +2,17 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel
+from tortoise.contrib.pydantic import pydantic_model_creator, PydanticModel
 
-from user.schemas import UserInPost
+from user.schemas import UserPublic
 
 
 class CategoryBase(BaseModel):
     id: Optional[int]
     name: str
+
+    class Config:
+        orm_mode = True
 
 
 class CategoryCreate(CategoryBase):
@@ -18,7 +22,7 @@ class CategoryCreate(CategoryBase):
         orm_mode = True
 
 
-class PostBase(BaseModel):
+class PostBase(PydanticModel):
     id: Optional[int]
     category: Optional[int]
     title: str
@@ -30,12 +34,24 @@ class PostList(PostBase):
     # user: UserInPost
 
 
-class PostDetail(PostList):
-   author: UserInPost
+class PostDetail(PydanticModel):
+    id: int
+    category: CategoryBase
+    author: UserPublic
+    title: str
+    text: str
+    created_dt: datetime
 
 
 class PostCreate(PostBase):
-    category: int
 
     class Config:
         orm_mode = True
+
+# PostCreate = pydantic_model_creator(
+#     Post,
+#     exclude_readonly=True,
+# )
+
+
+# PostD = pydantic_model_creator(Post, name="get_post")

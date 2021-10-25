@@ -6,3 +6,5 @@ versions
 __pycache__
 
 .env
+
+migrations/models/

@@ -1,37 +1,56 @@
-import uuid
 from typing import Optional
 
-import pydantic
-from fastapi_users import models
-from pydantic import BaseModel
+from fastapi import Form
+from pydantic import BaseModel, EmailStr
+from tortoise.contrib.pydantic import pydantic_model_creator
+from .models import User
 
 
-class User(models.BaseUser):
-
-    class Config:
-        orm_mode = True
+class UserBase(BaseModel):
+    email: Optional[str] = None
 
 
-class UserInPost(BaseModel):
-    id: Optional[str]
-    email: str = None
-
-    @pydantic.validator("id", pre=True, always=True)
-    def default_id(cls, v):
-        return v or str(uuid.uuid4())
+class UserInDB(UserBase):
+    id: int = None
+    username: Optional[str] = None
+    email: Optional[str] = None
+    is_active: Optional[bool] = True
+    is_superuser: Optional[bool] = False
 
     class Config:
         orm_mode = True
 
 
-class UserCreate(User, models.BaseUserCreate):
-    name: str
+class UserCreate(UserInDB):
+    username: str
+    email: EmailStr
+    password: str
+    first_name: str
+    avatar: str = None
 
 
-class UserUpdate(User, models.BaseUserUpdate):
-    pass
+class UserCreateInRegistration(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    first_name: str
+    avatar: str = None
+
+    class Config:
+        orm_mode = True
 
 
-class UserDB(User, models.BaseUserDB):
-    pass
+class UserUpdate(UserInDB):
+    password: Optional[str] = Form(...)
 
+
+class UserPublic(UserBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+User_C_Pydantic = pydantic_model_creator(
+    User, name='create_user', exclude_readonly=True, exclude=('is_active', 'is_staff', 'is_superuser'))
+User_G_Pydantic = pydantic_model_creator(User, name='user')

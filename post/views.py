@@ -2,8 +2,8 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from user.auth import current_active_user, is_superuser
 from user.models import User
+from user.permissions import is_superuser, get_user
 from . import services
 from .schemas import PostList, PostDetail, PostCreate, CategoryCreate, CategoryBase
 
@@ -16,13 +16,13 @@ async def category_list():
 
 
 @router.post('/category', status_code=201, response_model=CategoryBase)
-async def post_create(item: CategoryCreate, user: User = Depends(is_superuser)):
+async def category_create(schema: CategoryCreate, user: User = Depends(is_superuser)):
     if not user:
         return HTTPException(status_code=403)
-    return await services.create_category(item)
+    return await services.create_category(schema)
 
 
-@router.get('/', response_model=List[PostList])
+@router.get('/', response_model=List[PostDetail])
 async def post_list():
     return await services.get_post_list()
 
@@ -36,6 +36,6 @@ async def post_detail(post_id: int):
 
 
 @router.post('/', status_code=201, response_model=PostDetail)
-async def post_create(item: PostCreate, user: User = Depends(current_active_user)):
-    return await services.create_post(item, user)
+async def post_create(schema: PostCreate, user: User = Depends(get_user)):
+    return await services.create_post(schema, user)
 
